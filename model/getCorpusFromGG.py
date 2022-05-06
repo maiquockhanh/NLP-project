@@ -6,29 +6,34 @@ from bs4 import BeautifulSoup
 from bs4.element import Comment
 import urllib.request
 
-def searchGG(query):
+def searchGG(query, num):
   params = {
       "engine": "google",
       "q": query,
-      "location": "Vietnam",
       "google_domain": "google.com",
-      "gl": "vn",
-      "hl": "sv",
-      "num": 20,
+      "num": num,
       "api_key": 'b490e6c22c280d23132f88cd00598d80440b34c62dff5795eae5c1396525e191'
   }
 
   client = GoogleSearch(params)
   data = client.get_dict()
-  db = [dt['link'] for dt in data['organic_results']]
+  db = [dt['link'] for dt in data['organic_results'] 
+        if not ('pdf' in dt['link'] 
+                or '.aspx' in dt['link']  
+                or 'qcc' in dt['link']
+                or 'shtml' in dt['link']
+                or 'pdxscholar' in dt['link']
+                or 'cgi' in dt['link']
+                or 'www1' in dt['link']
+        )]
 
   return pd.DataFrame (db, columns = ['link'])
 
 def getContents(link_list):
   content_list = []
-  for link in link_list['link']:
+  for link in link_list:
+    print(link)
     try:
-      print(link)
       html = requests.get(link)
       text_html = text_from_html(html.text)
     #   text = ''
@@ -41,8 +46,7 @@ def getContents(link_list):
     except:
       content_list.append('')
 
-  link_list['content'] = content_list
-  return link_list
+  return content_list
 
 def tag_visible(element):
     if element.parent.name in ['style', 'script', 'head', 'title', 'meta', '[document]']:
@@ -56,3 +60,4 @@ def text_from_html(body):
     texts = soup.findAll(text=True)
     visible_texts = filter(tag_visible, texts)  
     return u" ".join(t.strip() for t in visible_texts)
+  
